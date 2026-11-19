@@ -609,7 +609,7 @@ class PasswordAuthTests(TestCase):
         response = self.client.get(reverse('main:show_main'))
 
         self.assertContains(response, 'data-profile-open')
-        self.assertContains(response, '/static/js/main.js?v=21')
+        self.assertRegex(response.content.decode(response.charset), r'src="/static/js/main\.js\?v=\d+"')
         self.assertContains(response, 'Edit your profile')
         self.assertContains(response, 'value="Demo"')
         self.assertContains(response, 'value="User"')
