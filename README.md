@@ -106,6 +106,16 @@ python manage.py check   # memeriksa konfigurasi proyek
 python manage.py test    # menjalankan test suite
 ```
 
+### Dasar REST API
+
+REST API memakai awalan `/api/v1/`. Daftarkan URL API aplikasi melalui `config/api_urls.py`.
+Untuk menerima JSON, kirim header `Accept: application/json`.
+
+- Endpoint memakai sesi login WearBack dan memerlukan autentikasi secara default. Tetapkan izin secara eksplisit untuk endpoint publik.
+- Untuk permintaan `POST`, `PUT`, `PATCH`, dan `DELETE` dengan autentikasi sesi, sertakan token CSRF melalui header `X-CSRFToken`.
+- Daftar yang memakai paginasi DRF mendukung `?page=2` dengan 20 item per halaman. Respons berisi `count`, `next`, `previous`, dan `results`.
+- Gunakan format galat bawaan DRF. Galat validasi dikelompokkan berdasarkan nama field atau `non_field_errors`. Galat seperti penolakan akses memakai `detail`.
+
 ### Autentikasi dan SSO UI
 
 Login, registrasi, logout, dan penautan akun SSO UI tersedia melalui popup. Konfigurasi SSO menggunakan `https://sso.ui.ac.id/cas2/`. Lihat [panduan autentikasi](docs/authentication.md) untuk konfigurasi callback deployment dan langkah migrasi database lama sebelum menjalankan `migrate` pada instalasi yang sudah memiliki akun pengguna.
