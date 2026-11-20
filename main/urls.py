@@ -1,10 +1,14 @@
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from . import api_views
 
 from main import views
 from main.review_views import review_preview
 from reviews.views import transaction_review
 
 app_name = 'main'
+router = DefaultRouter()
+router.register(r"auctions", api_views.AuctionViewSet, basename="auction")
 
 urlpatterns = [
     path('', views.show_main, name='show_main'),
@@ -32,4 +36,10 @@ urlpatterns = [
     path('sso/login/', views.sso_login, name='sso_login'),
     path('sso/callback/', views.sso_callback, name='sso_callback'),
     path('sso/link/', views.sso_link, name='sso_link'),
+    
+    path("api/", include(router.urls)),
+    path("api/auth/login/", api_views.api_login, name="api_login"),
+    path("api/auth/register/", api_views.api_register, name="api_register"),
+    path("api/auth/logout/", api_views.api_logout, name="api_logout"),
+    path("api/auth/profile/", api_views.api_profile, name="api_profile"),
 ]
