@@ -2,10 +2,12 @@ import uuid
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from listings.models import Listing
-from .models import Bid
+from main.models import Bid, CartItem, TransactionHistory
 
 User = get_user_model()
 
+
+# --- 1. SERIALIZER AUTENTIKASI, PROFIL, & AUCTION (UZA) ---
 
 class UserProfileSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()
@@ -128,3 +130,59 @@ class AuctionListingSerializer(serializers.ModelSerializer):
         if not seller:
             return ""
         return seller.get_full_name() or seller.email or seller.username
+
+
+# --- 2. SERIALIZER TRANSACTIONS & CARTS (FATHIR) ---
+
+class TransactionHistorySerializer(serializers.ModelSerializer):
+    status_display = serializers.CharField(source="get_status_display", read_only=True)
+
+    class Meta:
+        model = TransactionHistory
+        fields = [
+            "id", "order_number",
+            "item_name", "item_image_url", "item_summary",
+            "price", "item_count",
+            "seller_name",
+            "status", "status_display", "status_message",
+            "payment_deadline", "created_at", "updated_at", "completed_at",
+        ]
+        read_only_fields = fields
+
+
+class CartItemSerializer(serializers.ModelSerializer):
+    listing_id = serializers.IntegerField(read_only=True)
+    listing_name = serializers.CharField(
+        source="listing.name",
+        read_only=True
+    )
+    listing_price = serializers.DecimalField(
+        source="listing.price",
+        max_digits=12,
+        decimal_places=2,
+        read_only=True
+    )
+    listing_image = serializers.URLField(
+        source="listing.image_url",
+        read_only=True
+    )
+    listing_stock = serializers.IntegerField(
+        source="listing.stock",
+        read_only=True
+    )
+
+    class Meta:
+        model = CartItem
+        fields = [
+            "id", "listing_id",
+            "listing_name", "listing_price", "listing_image", "listing_stock",
+            "quantity", "selected", "created_at",
+        ]
+        read_only_fields = ["id", "created_at"]
+
+
+class CheckoutSerializer(serializers.Serializer):
+    cart_item_ids = serializers.ListField(
+        child=serializers.IntegerField(min_value=1),
+        allow_empty=False,
+    )
