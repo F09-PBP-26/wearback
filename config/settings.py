@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     'main',
     'listings',
     'reviews',
+    'rest_framework',
 ]
 
 MIDDLEWARE = [

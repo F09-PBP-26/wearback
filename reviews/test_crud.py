@@ -52,7 +52,7 @@ class ReviewCrudTests(TestCase):
         self.assertRedirects(response, reverse('main:transaction_review', args=[self.order.pk]))
         review = Review.objects.get()
         self.assertEqual(self.client.get(reverse('reviews:edit', args=[review.pk])).status_code, 200)
-        response = self.client.post(reverse('reviews:edit', args=[review.pk]), {'rating': '2'})
+        response = self.client.post(reverse('reviews:edit', args=[review.pk]), {'rating': '2', 'comment': 'Barang tidak sesuai'})
         self.assertEqual(response.status_code, 302)
         delete_url = reverse('reviews:delete', args=[review.pk])
         self.assertContains(self.client.get(delete_url), 'Delete your review?')
