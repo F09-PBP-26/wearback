@@ -41,7 +41,7 @@ class ListingForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.label_suffix = ''
         if self.instance._state.adding:
-            for name in ('price', 'category', 'size', 'condition'):
+            for name in Listing.REQUIRED_ON_CREATE:
                 self.fields[name].required = True
         self.fields['category'].choices = [('', 'Choose a category'), *Listing.Category.choices]
         self.fields['condition'].choices = [('', 'Choose a condition'), *Listing.Condition.choices]

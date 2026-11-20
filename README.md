@@ -116,6 +116,19 @@ Untuk menerima JSON, kirim header `Accept: application/json`.
 - Daftar yang memakai paginasi DRF mendukung `?page=2` dengan 20 item per halaman. Respons berisi `count`, `next`, `previous`, dan `results`.
 - Gunakan format galat bawaan DRF. Galat validasi dikelompokkan berdasarkan nama field atau `non_field_errors`. Galat seperti penolakan akses memakai `detail`.
 
+#### API Listings
+
+| Metode | URL | Akses |
+| --- | --- | --- |
+| `GET` | `/api/v1/listings/` | Publik, dengan paginasi dan urutan terbaru |
+| `GET` | `/api/v1/listings/<id>/` | Publik |
+| `POST` | `/api/v1/listings/` | Pengguna yang sudah masuk |
+| `PUT`, `PATCH`, `DELETE` | `/api/v1/listings/<id>/` | Pemilik listing |
+
+Untuk membuat listing, isi `name`, `price`, `category`, `size`, dan `condition`. Kirim harga dalam rupiah tanpa pemisah ribuan, misalnya `"150000.00"`. `stock` berisi jumlah barang dan bernilai `1` secara default. `seller` diambil dari sesi pengguna. `contact_email` berisi alamat kontak yang dicantumkan pada listing dan hanya tampil setelah masuk.
+
+Pembuatan yang berhasil mengembalikan `201`, dan penghapusan yang berhasil mengembalikan `204`. Permintaan ubah atau hapus dari pengguna lain mengembalikan `404`. Listing dengan bid tertunda atau disetujui mengembalikan `409` saat diubah atau dihapus. Ulasan pembeli atau pesanan berbayar yang menunggu konfirmasi penjual juga menghalangi penghapusan.
+
 ### Autentikasi dan SSO UI
 
 Login, registrasi, logout, dan penautan akun SSO UI tersedia melalui popup. Konfigurasi SSO menggunakan `https://sso.ui.ac.id/cas2/`. Lihat [panduan autentikasi](docs/authentication.md) untuk konfigurasi callback deployment dan langkah migrasi database lama sebelum menjalankan `migrate` pada instalasi yang sudah memiliki akun pengguna.

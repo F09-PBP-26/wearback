@@ -2,7 +2,6 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import Avg, Count, Exists, OuterRef
-from django.db.models.deletion import ProtectedError
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -11,6 +10,10 @@ from django.views.decorators.http import require_GET, require_http_methods, requ
 
 from listings.forms import ListingForm
 from listings.models import Listing
+from listings.services import (
+    DELETE_BLOCKED_BY_BIDS, DELETE_BLOCKED_BY_ORDERS, DELETE_BLOCKED_BY_REVIEWS,
+    EDIT_BLOCKED_BY_BIDS, ListingDeletionBlocked, delete_listing, has_active_bids,
+)
 from main.models import Bid, DropoffLocation, TransactionHistory
 from main.views import AUCTION_DURATION, BID_EXTENSION, _format_rupiah, page_context
 from reviews.models import Review
@@ -144,8 +147,8 @@ def update(request, pk):
             listing = get_object_or_404(
                 Listing.objects.select_for_update(), pk=pk, seller=request.user,
             )
-            if listing.bids.filter(status__in=[Bid.Status.PENDING, Bid.Status.APPROVED]).exists():
-                messages.error(request, 'This listing cannot be changed after bidding has started.')
+            if has_active_bids(listing):
+                messages.error(request, EDIT_BLOCKED_BY_BIDS)
                 return redirect('listings:detail', pk=listing.pk)
             form = ListingForm(request.POST, instance=listing)
             if form.is_valid():
@@ -154,8 +157,8 @@ def update(request, pk):
                 return redirect('listings:detail', pk=listing.pk)
     else:
         listing = get_object_or_404(Listing, pk=pk, seller=request.user)
-        if listing.bids.filter(status__in=[Bid.Status.PENDING, Bid.Status.APPROVED]).exists():
-            messages.error(request, 'This listing cannot be changed after bidding has started.')
+        if has_active_bids(listing):
+            messages.error(request, EDIT_BLOCKED_BY_BIDS)
             return redirect('listings:detail', pk=listing.pk)
         form = ListingForm(instance=listing)
     context = page_context(request)
@@ -172,33 +175,24 @@ def delete(request, pk):
             listing = get_object_or_404(
                 Listing.objects.select_for_update(), pk=pk, seller=request.user,
             )
-            if listing.bids.filter(status__in=[Bid.Status.PENDING, Bid.Status.APPROVED]).exists():
-                messages.error(request, 'This listing cannot be deleted after bidding has started.')
-                return redirect('listings:detail', pk=listing.pk)
-            if listing.reviews.exists():
-                messages.error(request, 'This listing has buyer reviews and cannot be deleted. Set its stock to 0 to stop selling it.')
-                return redirect('listings:detail', pk=listing.pk)
-            if listing.transactions.filter(status='paid').exists():
-                messages.error(request, 'This listing has paid orders awaiting seller confirmation and cannot be deleted.')
-                return redirect('listings:mine')
             try:
-                with transaction.atomic():
-                    listing.delete()
-            except ProtectedError:
-                # Also handle a protected relation added after the checks above.
-                messages.error(request, 'This listing is linked to protected records and cannot be deleted. Set its stock to 0 to stop selling it.')
+                delete_listing(listing)
+            except ListingDeletionBlocked as error:
+                messages.error(request, str(error))
+                if error.has_paid_orders:
+                    return redirect('listings:mine')
                 return redirect('listings:detail', pk=listing.pk)
             messages.success(request, 'Listing deleted.')
             return redirect('listings:mine')
     listing = get_object_or_404(Listing, pk=pk, seller=request.user)
     if listing.transactions.filter(status='paid').exists():
-        messages.error(request, 'This listing has paid orders awaiting seller confirmation and cannot be deleted.')
+        messages.error(request, DELETE_BLOCKED_BY_ORDERS)
         return redirect('listings:mine')
     if listing.reviews.exists():
-        messages.error(request, 'This listing has buyer reviews and cannot be deleted. Set its stock to 0 to stop selling it.')
+        messages.error(request, DELETE_BLOCKED_BY_REVIEWS)
         return redirect('listings:detail', pk=listing.pk)
-    if listing.bids.filter(status__in=[Bid.Status.PENDING, Bid.Status.APPROVED]).exists():
-        messages.error(request, 'This listing cannot be deleted after bidding has started.')
+    if has_active_bids(listing):
+        messages.error(request, DELETE_BLOCKED_BY_BIDS)
         return redirect('listings:detail', pk=listing.pk)
     context = page_context(request)
     context['listing'] = listing
