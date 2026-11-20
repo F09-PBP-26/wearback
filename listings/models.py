@@ -6,7 +6,12 @@ from django.core.validators import MaxValueValidator, MinValueValidator, URLVali
 from django.db import models
 
 
+validate_https_url = URLValidator(schemes=['https'])
+
+
 class Listing(models.Model):
+    REQUIRED_ON_CREATE = ('name', 'price', 'category', 'size', 'condition')
+
     class Category(models.TextChoices):
         TOPS = 'tops', 'Tops'
         BOTTOMS = 'bottoms', 'Bottoms'
@@ -26,7 +31,7 @@ class Listing(models.Model):
     description = models.TextField(blank=True)
     price = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True,
                                 validators=[MinValueValidator(Decimal('0.01'))])
-    image_url = models.URLField(max_length=1000, blank=True, validators=[URLValidator(schemes=['https'])])
+    image_url = models.URLField(max_length=1000, blank=True, validators=[validate_https_url])
     category = models.CharField(max_length=20, choices=Category.choices, blank=True)
     size = models.CharField(max_length=32, blank=True)
     condition = models.CharField(max_length=20, choices=Condition.choices, blank=True)
